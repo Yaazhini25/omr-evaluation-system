@@ -39,7 +39,7 @@ This automated system provides:
 
 1. **Clone the repository:**
 ```bash
-git clone https://github.com/yourusername/omr-evaluation-system.git
+git clone https://github.com/Yaazhini25/omr-evaluation-system.git
 cd omr-evaluation-system
 ```
 
@@ -159,13 +159,9 @@ To modify for different formats, update the parameters in `extract_bubbles()` fu
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
 ## 👥 Authors
 
-- **Your Name** - *Initial work* - [YourGitHub](https://github.com/yourusername)
+- **Yaazhini S** - *Initial work* - https://github.com/Yaazhini25/omr-evaluation-system
 
 ## 🙏 Acknowledgments
 
