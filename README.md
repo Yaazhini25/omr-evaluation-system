@@ -173,7 +173,7 @@ To modify for different formats, update the parameters in `extract_bubbles()` fu
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 👥 Authors
+## 👥 Author
 
 - **Yaazhini S** - *Initial work* - https://github.com/Yaazhini25/omr-evaluation-system
 
