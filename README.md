@@ -129,8 +129,6 @@ The system is pre-configured for Innomatics OMR sheet format:
 
 To modify for different formats, update the parameters in `extract_bubbles()` function.
 
-## 📸 Screenshots
-
 ### Main Interface
 - Upload answer key and OMR sheets
 - Real-time processing with progress indicators
@@ -165,31 +163,9 @@ To modify for different formats, update the parameters in `extract_bubbles()` fu
 - 🎯 Ensure all bubbles are clearly visible
 - 🚫 Avoid shadows on the answer sheet
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
 
 ## 👥 Author
 
 - **Yaazhini S** - *Initial work* - https://github.com/Yaazhini25/omr-evaluation-system
-
-## 🙏 Acknowledgments
-
-- Innomatics Research Labs for the problem statement and requirements
-- OpenCV community for computer vision tools
-- Streamlit for the amazing web framework
-
-## 📞 Support
-
-If you encounter any issues or have questions:
-- Open an issue on GitHub
-- Check the troubleshooting section above
-- Review the debug mode output for detailed processing information
-
----
 
 ⭐ **Star this repository if it helps you!** ⭐
