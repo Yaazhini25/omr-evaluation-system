@@ -92,7 +92,7 @@ omr-evaluation-system/
 ├── omr_preprocessing.py        # Image preprocessing functions
 ├── omr_bubble_detection.py     # Bubble detection algorithms
 ├── omr_scoring.py             # Scoring and answer key processing
-├── omr_results.py             # Backend DB to view the results
+├── omr_results.db             # Backend DB to view the results
 ├── ans_key.py                 # Load the answer key excel file
 ├── db_setup.py                # Database operations
 ├── db_drop.py                 # Drop old database
@@ -104,6 +104,20 @@ omr-evaluation-system/
 └── input-images/              # Sample OMR sheets and answer keys
     ├── Img1.jpeg
     └── Img2.jpeg
+    ├── Img3.jpeg
+    └── Img4.jpeg
+    ├── Img5.jpeg
+    └── Img6.jpeg
+    ├── Img7.jpeg
+    └── Img8.jpeg
+    ├── Img9.jpeg
+    └── Img10.jpeg
+    ├── Img11.jpeg
+    └── Img12.jpeg
+    ├── Img13.jpeg
+    └── Img14.jpeg
+    ├── Img15.jpeg
+    └── Img16.jpeg
 ```
 
 ## 🔧 Configuration
