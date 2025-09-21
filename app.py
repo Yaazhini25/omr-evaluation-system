@@ -301,12 +301,26 @@ with col1:
     answer_file = st.file_uploader(
         "Upload Answer Key Excel File", 
         type=["xlsx", "xls"],
-        help="Excel file should have subjects as columns and answers as rows"
+        help="Excel file should have subjects as columns and answers as rows (Max size: 5MB)"
     )
     
     if answer_file:
+        # Check file size (5MB limit)
+        if answer_file.size > 5 * 1024 * 1024:  # 5MB in bytes
+            st.error("❌ File size too large! Please use a file smaller than 5MB.")
+            st.stop()
+        
         try:
             df_key = pd.read_excel(answer_file, header=0)
+            
+            # Validate Excel structure
+            if df_key.empty:
+                st.error("❌ Excel file is empty! Please check your answer key file.")
+                st.stop()
+            
+            if len(df_key.columns) == 0:
+                st.error("❌ No columns found in Excel file! Please check the file format.")
+                st.stop()
             
             # Show the structure of uploaded file
             st.write("**📊 Answer Key Preview:**")
@@ -363,8 +377,19 @@ with col2:
         "Upload OMR Sheet Images", 
         type=["png", "jpg", "jpeg"],
         accept_multiple_files=True,
-        help="Upload one or more OMR sheet images"
+        help="Upload one or more OMR sheet images (Max 5MB per file, 10 files max)"
     )
+    
+    # Validate uploaded files
+    if uploaded_files:
+        if len(uploaded_files) > 10:
+            st.error("❌ Too many files! Please upload maximum 10 files at once.")
+            uploaded_files = uploaded_files[:10]
+        
+        for file in uploaded_files:
+            if file.size > 5 * 1024 * 1024:  # 5MB limit
+                st.error(f"❌ File '{file.name}' is too large! Please use files smaller than 5MB.")
+                st.stop()
     
     # Student name input
     student_name_input = st.text_input(
