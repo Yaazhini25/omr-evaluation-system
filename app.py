@@ -35,15 +35,47 @@ def sanitize_filename(filename):
     """
     Sanitize filename to avoid upload issues
     """
+    # Remove double extensions (e.g., .xlsx.xlsx -> .xlsx)
+    if filename.lower().endswith('.xlsx.xlsx'):
+        filename = filename[:-5]  # Remove last .xlsx
+    elif filename.lower().endswith('.xls.xls'):
+        filename = filename[:-4]   # Remove last .xls
+    
     # Remove special characters and replace with underscores
-    sanitized = re.sub(r'[^\w\s-]', '_', filename)
+    name, ext = os.path.splitext(filename)
+    name = re.sub(r'[^\w\s-]', '_', name)
     # Replace multiple spaces/underscores with single underscore
-    sanitized = re.sub(r'[\s_]+', '_', sanitized)
+    name = re.sub(r'[\s_]+', '_', name)
     # Convert to lowercase
-    sanitized = sanitized.lower()
+    name = name.lower()
     # Remove leading/trailing underscores
-    sanitized = sanitized.strip('_')
-    return sanitized
+    name = name.strip('_')
+    
+    return name + ext.lower()
+
+def validate_filename(filename):
+    """
+    Validate filename and provide user feedback
+    """
+    issues = []
+    suggestions = []
+    
+    # Check for double extensions
+    if '.xlsx.xlsx' in filename.lower() or '.xls.xls' in filename.lower():
+        issues.append("❌ Double file extension detected")
+        suggestions.append("💡 Remove the extra extension")
+    
+    # Check for special characters
+    if re.search(r'[^\w\s.-]', filename):
+        issues.append("❌ Special characters in filename")
+        suggestions.append("💡 Use only letters, numbers, spaces, dots, and hyphens")
+    
+    # Check for excessive length
+    if len(filename) > 50:
+        issues.append("❌ Filename too long")
+        suggestions.append("💡 Use a shorter filename (under 50 characters)")
+    
+    return issues, suggestions
 
 def create_donut_chart(data, title, colors=None):
     """
@@ -301,13 +333,28 @@ st.markdown("""
 
 st.markdown('<h1 class="main-header">🎯 Automated OMR Evaluation System</h1>', unsafe_allow_html=True)
 
-# Initialize session state
+# Initialize session state with persistence
 if 'answer_key_loaded' not in st.session_state:
     st.session_state.answer_key_loaded = False
 if 'answer_key' not in st.session_state:
     st.session_state.answer_key = None
 if 'subject_names' not in st.session_state:
     st.session_state.subject_names = []
+if 'results_cache' not in st.session_state:
+    st.session_state.results_cache = []
+
+# Add session state persistence check
+def check_session_state():
+    """
+    Check if session state is properly maintained
+    """
+    if not st.session_state.answer_key_loaded:
+        return False, "Answer key not loaded"
+    if not st.session_state.answer_key:
+        return False, "Answer key data missing"
+    if not st.session_state.subject_names:
+        return False, "Subject names missing"
+    return True, "Session state OK"
 
 # Sidebar for configuration
 with st.sidebar:
@@ -318,6 +365,13 @@ with st.sidebar:
     # Show deployment info
     deployment_platform = get_deployment_info()
     st.info(f"🌐 Platform: {deployment_platform}")
+    
+    # Show session state status
+    if st.session_state.answer_key_loaded:
+        st.success("✅ Answer Key Loaded")
+        st.write(f"📊 Subjects: {len(st.session_state.subject_names)}")
+    else:
+        st.error("❌ No Answer Key")
     
     st.markdown("---")
     st.markdown("### 📋 Quick Guide")
@@ -358,15 +412,35 @@ with col1:
             st.error("❌ File size too large! Please use a file smaller than 5MB.")
             st.stop()
         
-        # Display file info for debugging
+        # Validate filename and show issues
         original_name = answer_file.name
+        issues, suggestions = validate_filename(original_name)
         sanitized_name = sanitize_filename(original_name)
         
-        st.info(f"📄 **File Info:**")
-        st.write(f"- Original name: `{original_name}`")
-        st.write(f"- Sanitized name: `{sanitized_name}`")
-        st.write(f"- Size: {answer_file.size:,} bytes ({answer_file.size/1024:.2f} KB)")
-        st.write(f"- Type: {answer_file.type}")
+        # Display file info for debugging
+        st.info(f"📄 **File Analysis:**")
+        col_a, col_b = st.columns([1, 1])
+        
+        with col_a:
+            st.write(f"**Original:** `{original_name}`")
+            st.write(f"**Sanitized:** `{sanitized_name}`")
+            st.write(f"**Size:** {answer_file.size:,} bytes")
+            st.write(f"**Type:** {answer_file.type}")
+        
+        with col_b:
+            if issues:
+                st.error("**⚠️ Filename Issues Detected:**")
+                for issue in issues:
+                    st.write(issue)
+                st.info("**💡 Suggestions:**")
+                for suggestion in suggestions:
+                    st.write(suggestion)
+                
+                # Show recommended filename
+                recommended = "answer_key.xlsx"
+                st.success(f"**✅ Recommended filename:** `{recommended}`")
+            else:
+                st.success("**✅ Filename looks good!**")
         
         try:
             # Try to read the Excel file with better error handling
@@ -438,8 +512,16 @@ with col1:
             st.info(f"**Questions per subject:** {questions_per_subject}")
             st.info(f"**Total questions:** {len(answer_key_flat)}")
             
-            # Initialize database
-            init_db(subject_names)
+            # Initialize database with better error handling
+            try:
+                db_success = init_db(subject_names)
+                if db_success:
+                    st.success("✅ Database initialized successfully!")
+                else:
+                    st.warning("⚠️ Database initialization failed, using session storage")
+            except Exception as e:
+                st.warning(f"⚠️ Database error: {str(e)}")
+                st.info("💡 Using session storage as fallback")
             
             if debug_mode:
                 st.write("**🔍 Debug - Answer Key Sample:**", answer_key_flat[:10])
@@ -480,8 +562,19 @@ with col2:
 st.markdown('<div class="section-header">🔍 Step 3: Evaluate OMR Sheets</div>', unsafe_allow_html=True)
 
 if st.button("🚀 Start Evaluation", type="primary", use_container_width=True):
-    if not st.session_state.answer_key_loaded:
-        st.error("❌ Please upload the answer key first!")
+    # Check session state first
+    session_ok, session_msg = check_session_state()
+    
+    if not session_ok:
+        st.error(f"❌ Session issue: {session_msg}")
+        st.error("💡 Please re-upload your answer key and try again")
+        
+        # Show debug info
+        if debug_mode:
+            st.write("**🔍 Session State Debug:**")
+            st.write(f"- answer_key_loaded: {st.session_state.answer_key_loaded}")
+            st.write(f"- answer_key length: {len(st.session_state.answer_key) if st.session_state.answer_key else 0}")
+            st.write(f"- subject_names: {st.session_state.subject_names}")
     elif not uploaded_files:
         st.error("❌ Please upload at least one OMR sheet!")
     else:
