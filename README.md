@@ -167,5 +167,3 @@ To modify for different formats, update the parameters in `extract_bubbles()` fu
 ## 👥 Author
 
 - **Yaazhini S** - *Initial work* - https://github.com/Yaazhini25/omr-evaluation-system
-
-⭐ **Star this repository if it helps you!** ⭐
