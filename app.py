@@ -11,6 +11,40 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 
+import re
+
+import os
+
+# Add at the top after imports
+def get_deployment_info():
+    """
+    Detect deployment platform and return relevant info
+    """
+    if "STREAMLIT_CLOUD" in os.environ or "streamlit.io" in os.environ.get("STREAMLIT_SERVER_ADDRESS", ""):
+        return "Streamlit Cloud"
+    elif "DYNO" in os.environ:
+        return "Heroku"
+    elif "RAILWAY_" in os.environ.get("RAILWAY_ENVIRONMENT_NAME", ""):
+        return "Railway"
+    elif "RENDER" in os.environ.get("RENDER_SERVICE_NAME", ""):
+        return "Render"
+    else:
+        return "Local/Other"
+
+def sanitize_filename(filename):
+    """
+    Sanitize filename to avoid upload issues
+    """
+    # Remove special characters and replace with underscores
+    sanitized = re.sub(r'[^\w\s-]', '_', filename)
+    # Replace multiple spaces/underscores with single underscore
+    sanitized = re.sub(r'[\s_]+', '_', sanitized)
+    # Convert to lowercase
+    sanitized = sanitized.lower()
+    # Remove leading/trailing underscores
+    sanitized = sanitized.strip('_')
+    return sanitized
+
 def create_donut_chart(data, title, colors=None):
     """
     Create a beautiful donut chart with custom styling
@@ -281,6 +315,10 @@ with st.sidebar:
     debug_mode = st.checkbox("🔍 Enable Debug Mode", value=False)
     show_charts = st.checkbox("📊 Show Detailed Charts", value=True)
     
+    # Show deployment info
+    deployment_platform = get_deployment_info()
+    st.info(f"🌐 Platform: {deployment_platform}")
+    
     st.markdown("---")
     st.markdown("### 📋 Quick Guide")
     st.markdown("""
@@ -290,6 +328,16 @@ with st.sidebar:
     4. View results and charts
     5. Download CSV reports
     """)
+    
+    if deployment_platform != "Local/Other":
+        st.markdown("---")
+        st.markdown("### 💡 Upload Tips")
+        st.markdown("""
+        - Use simple filenames (no special characters)
+        - Keep files under 5MB
+        - Try renaming if upload fails
+        """)
+
 
 # Main content area
 col1, col2 = st.columns([1, 1])
@@ -310,8 +358,36 @@ with col1:
             st.error("❌ File size too large! Please use a file smaller than 5MB.")
             st.stop()
         
+        # Display file info for debugging
+        original_name = answer_file.name
+        sanitized_name = sanitize_filename(original_name)
+        
+        st.info(f"📄 **File Info:**")
+        st.write(f"- Original name: `{original_name}`")
+        st.write(f"- Sanitized name: `{sanitized_name}`")
+        st.write(f"- Size: {answer_file.size:,} bytes ({answer_file.size/1024:.2f} KB)")
+        st.write(f"- Type: {answer_file.type}")
+        
         try:
-            df_key = pd.read_excel(answer_file, header=0)
+            # Try to read the Excel file with better error handling
+            with st.spinner("📊 Processing Excel file..."):
+                try:
+                    # Method 1: Direct pandas read
+                    df_key = pd.read_excel(answer_file, header=0, engine='openpyxl')
+                except Exception as e1:
+                    st.warning(f"⚠️ First attempt failed: {str(e1)}")
+                    try:
+                        # Method 2: Reset file pointer and try again
+                        answer_file.seek(0)
+                        file_bytes = answer_file.read()
+                        df_key = pd.read_excel(pd.io.common.BytesIO(file_bytes), header=0, engine='openpyxl')
+                    except Exception as e2:
+                        st.error(f"❌ Failed to read Excel file: {str(e2)}")
+                        st.error("💡 **Troubleshooting tips:**")
+                        st.error("1. Try renaming your file to remove special characters: `answer_key.xlsx`")
+                        st.error("2. Ensure file is a valid Excel format (.xlsx or .xls)")
+                        st.error("3. Try saving the file again in Excel")
+                        st.stop()
             
             # Validate Excel structure
             if df_key.empty:
@@ -321,6 +397,9 @@ with col1:
             if len(df_key.columns) == 0:
                 st.error("❌ No columns found in Excel file! Please check the file format.")
                 st.stop()
+            
+            # Show success message
+            st.success("✅ Excel file read successfully!")
             
             # Show the structure of uploaded file
             st.write("**📊 Answer Key Preview:**")
